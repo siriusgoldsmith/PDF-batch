@@ -1,0 +1,33 @@
+PDF Lote - fuentes de esta aplicación incluidas en fuentes/.
+Licencia de PDF Lote: GNU Affero General Public License v3 o posterior.
+Texto completo en COPYING. Sin garantía; uso bajo responsabilidad del operador.
+
+Microsoft Visual C++ Runtime x64 (redistributable binaries):
+  Procedencia oficial: https://aka.ms/vs/17/release/vc_redist.x64.exe
+  Se incluyen DLLs app-local del runtime mínimo, no DLLs de Wine.
+  Condiciones: licenses/Microsoft-VC-Runtime-license.rtf
+  El repositorio público no redistribuye DLLs de Microsoft por separado.
+  Para reconstruir, prepara runtime/ a partir de una instalación autorizada
+  del runtime oficial en Windows; consulta README.md.
+
+Dependencias de ejecución:
+Python 3.11.9 / Tk 8.6: PSF / Tcl-Tk BSD-style licenses
+  https://www.python.org/downloads/release/python-3119/
+  https://github.com/python/cpython/tree/v3.11.9
+PyMuPDF 1.26.7 / MuPDF: GNU AGPL v3 o licencia comercial del proveedor
+  En esta distribución se usa la opción AGPL.
+  https://github.com/pymupdf/PyMuPDF/tree/1.26.7
+  https://github.com/ArtifexSoftware/mupdf
+  https://pypi.org/project/PyMuPDF/1.26.7/#files
+Pillow 12.3.0: HPND / license texts in licenses/
+  https://github.com/python-pillow/Pillow/tree/12.3.0
+pywin32 312: PSF-style license
+  https://github.com/mhammond/pywin32/tree/b312
+PyInstaller 6.22.3: GPL with bootloader distribution exception
+  https://github.com/pyinstaller/pyinstaller/tree/v6.22.3
+
+Los avisos de licencia disponibles en las distribuciones instaladas se
+incluyen en licenses/. No afiliado a los autores de estas dependencias.
+Las dependencias de construcción están fijadas en fuentes/requirements.txt;
+fuentes/build-windows.bat permite reproducir el ejecutable en Windows.
+No se incluyen documentos del usuario ni credenciales.

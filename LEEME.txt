@@ -1,0 +1,103 @@
+PDF Lote v1.4 — Windows 10/11 de 64 bits
+=======================================
+Creado por siriusgoldsmith — https://github.com/siriusgoldsmith
+
+NOVEDADES v1.4
+- Interfaz revisada: tabla con más espacio para nombres, acciones de archivos
+  separadas de la impresión, inicio destacado y mensajes más breves.
+- Ventana de escritorio desde 960 x 640; controles y popup revisados sin recortes.
+- PDFs por lote es editable. Elige 20, 50, 100 o Todos, o escribe cualquier
+  cantidad entera positiva: por ejemplo, 7, 35 o 250. No hay un límite artificial
+  de 100. Si quedan menos documentos, imprime sólo los disponibles.
+- Se rechazan valores vacíos, cero, negativos, decimales y texto. Escribe los
+  números sin separadores (1000, no 1.000). La validación no envía trabajos.
+- Se eliminó la columna Salida física, sus botones y los avisos para confirmar
+  documentos uno por uno. El avance normal se registra automáticamente.
+- Sólo se solicita revisión ante una interrupción o error, mediante el preview.
+- Las observaciones históricas de versiones anteriores siguen en el registro:
+  no se borran ni se convierten automáticamente en éxitos. Una interrupción
+  antigua pendiente de resolver continúa protegida hasta que la resuelvas.
+
+USO
+1. Cierra la versión anterior, extrae el ZIP en una carpeta nueva y abre
+   PDFLote.exe. No necesitas Python, Adobe Reader ni Internet para imprimir.
+   No borres %LOCALAPPDATA%\PDFLote: ahí se conserva tu lote anterior.
+2. Añade PDFs. Se agregan al final en el orden visible. Añadir carpeta ordena
+   por nombre, sin subcarpetas. Windows puede entregar una selección múltiple
+   ordenada por nombre y no por los clics. Revisa el orden; usa Subir/Bajar
+   sobre documentos pendientes o añádelos uno por uno si necesitas otro orden.
+3. Elige impresora y configura papel, bandeja, color y dúplex en Ajustes Windows
+   ANTES de iniciar. Esos ajustes se aplican a todos los PDFs del grupo.
+4. Selecciona o escribe cuántos PDFs enviar por lote. La unidad es DOCUMENTOS,
+   no páginas. Todos procesa los pendientes disponibles hasta un bloqueo.
+5. Pulsa Iniciar / continuar y acepta la confirmación con la cantidad efectiva.
+   Al terminar el grupo, se detiene. Iniciar / continuar procesa el siguiente
+   grupo sin repetir documentos finalizados. No hay confirmación por cada PDF.
+6. Pausar tras documento espera a que termine el PDF actual; no lo corta a mitad.
+   El mensaje Pausa solicitada explica la espera. No fuerza la cancelación de
+   trabajos de Windows. Espera el fin de la operación antes de cerrar.
+
+CONTADOR Y ESTADOS
+- El contador y la barra muestran PDFs finalizados según Windows en el grupo
+  actual. Se reinician en cada inicio; el resumen general conserva el avance.
+- Pendiente: sin iniciar. En proceso: intento activo. Finalizado: terminó el
+  proceso, o el operador resolvió una interrupción continuando con el siguiente.
+- Resultado Windows conserva por separado el resultado automático registrado.
+  Finalizado según Windows NO certifica hojas físicas: un trabajo retirado de
+  la cola también puede desaparecer sin error observable.
+- Revisar interrupción: hay un resultado dudoso; bloquea el avance hasta resolver.
+- Omitido: se decidió no imprimir el documento. No se cuenta como finalizado.
+- No tienes que supervisar ni confirmar cada documento para que el lote avance.
+
+INTERRUPCIONES Y RECUPERACIÓN
+1. Ante un error, o al abrir después de un cierre inesperado, aparece un popup.
+   También puedes seleccionar el documento y pulsar Resolver interrupción.
+2. La vista muestra la última página registrada como enviada al controlador.
+   Si el documento no tiene progreso, muestra la referencia elegible anterior.
+   Sin registro previo, avisa sin inventar una página. El preview se genera
+   localmente y es una referencia, no una certificación de papel impreso.
+3. Sólo en este caso, compara con la última hoja y revisa la cola de Windows.
+   En dúplex, comprueba ambos lados. Un trabajo puede continuar después de
+   cerrar la app: espera o cancélalo manualmente antes de reintentar.
+4. Elige: reanudar este PDF desde página 1, desde la página que falta, continuar
+   con el siguiente porque este salió completo, u omitirlo sin confirmar papel.
+   La decisión requiere confirmación para evitar repetir a ciegas.
+5. Luego pulsa Iniciar / continuar. Cerrar el popup no cambia el estado ni imprime.
+
+ELIMINAR PDF / VACIAR CARPETA DEL LOTE
+- Eliminar PDF quita los seleccionados y sus copias locales del lote.
+- Vaciar carpeta del lote vacía la lista y elimina sus copias identificadas.
+- Ambas acciones piden confirmación; NUNCA borran los originales de origen.
+  Se conserva el historial de auditoría, no una copia recuperable de los PDFs.
+- No se puede borrar durante una operación ni eliminar interrupciones sin resolver.
+- Archivos bloqueados o sin procedencia verificable pueden conservarse por
+  seguridad. No borres manualmente archivos del registro mientras se usa la app.
+- Para retomar más tarde un lote que vas a vaciar, respalda antes su carpeta completa.
+
+LIMITACIONES Y PRUEBA INICIAL
+- Haz primero una prueba de 2 o 3 PDFs con tu impresora. Desde el servidor de
+  compilación se validaron interfaz y simulaciones; no se probó tu hardware.
+- No se garantiza ausencia de atascos, falta de papel, fallos de controlador ni
+  el orden físico entre bandejas o trabajos ajenos. Usa una impresora y evita
+  otros trabajos mientras se imprime el lote.
+- Rasterizado a 150 ppp, ajustado al área imprimible conservando la proporción.
+  No es impresión vectorial ni garantiza escala 100%; no usar para planos a escala.
+- No admite contraseñas ni ajustes distintos de papel/bandeja por PDF.
+- Un PDF dañado puede fallar al renderizar; se conserva el punto para revisión.
+
+DATOS Y PRIVACIDAD
+Los originales no cambian. Copias, historial y registro quedan en:
+%LOCALAPPDATA%\PDFLote\
+Necesitas espacio para una copia de todos los PDFs. Puede contener datos sensibles;
+protege tu cuenta y no compartas esa carpeta ni informes con rutas personales.
+No se envían PDFs a servidores ni se incorpora telemetría. El informe JSON contiene
+estados, rutas y metadatos históricos; no incluye los PDFs. La firma abre GitHub
+únicamente si haces clic. Una sola instancia por carpeta de datos, incluso entre
+sesiones de Windows. No borres queue.lock para abrir otra instancia.
+
+AUTOR Y LICENCIAS
+Firma visual: siriusgoldsmith. No es un certificado digital de Windows.
+SmartScreen puede mostrar editor desconocido. No desactives el antivirus.
+Fuentes y pruebas incluidas en fuentes/. Dependencias: Python/Tk, PyMuPDF (AGPL),
+Pillow y pywin32. Distribución bajo GNU AGPL v3 o posterior. Consulta COPYING,
+THIRD_PARTY.txt y licenses/ para licencias y referencias de dependencias.

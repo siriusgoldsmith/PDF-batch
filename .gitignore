@@ -1,0 +1,33 @@
+# Build outputs and local environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.log
+*.egg-info/
+
+# Operator documents, history, credentials and local backups
+backups/
+*.pdf
+*.sqlite*
+*.db
+*.db-*
+*.lock
+.env
+.env.*
+*.pfx
+*.p12
+*.pem
+*.key
+
+# Local diagnostics and packaging reports
+qa-*.json
+qa-*.png
+SHA256.txt
+
+# Obtain vendor runtime from an authorized Windows installation at build time.
+runtime/*.dll
+
+# Commit only audited source, original assets and notices.
