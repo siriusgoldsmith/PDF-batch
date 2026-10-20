@@ -28,7 +28,7 @@ Consulta [LEEME.txt](LEEME.txt) para funcionamiento, límites y recuperación.
 - Windows no puede certificar genéricamente cuál fue la última hoja física tras un corte.
 - Prueba primero con pocos documentos y tu impresora real. Las pruebas de interfaz y las simulaciones de transporte no sustituyen la validación de hardware.
 
-[Política de privacidad](PRIVACY.md) · [Code signing policy](SIGNING.md)
+[Política de privacidad](PRIVACY.md) · [Code signing policy](SIGNING.md) · [Preparación de la solicitud](docs/SIGNPATH_APPLICATION.md)
 
 ## Construir desde las fuentes
 
