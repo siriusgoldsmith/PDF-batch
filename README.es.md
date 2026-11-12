@@ -4,7 +4,9 @@
 
 **Impresión de PDFs por lotes para Windows 10/11 x64.** Creado por [siriusgoldsmith](https://github.com/siriusgoldsmith). Antes llamado *PDF Lote*.
 
-Una cola ordenada, copias locales de los documentos y un registro persistente para continuar tras interrupciones sin reimprimir a ciegas. Un solo `pdf-batch.exe`: no requiere instalar nada, ni Adobe Reader ni Internet en el equipo que imprime.
+PDF-batch imprime grandes grupos de PDFs en orden y registra cada documento, para continuar tras un atasco, un corte de luz o un cierre inesperado sin reimprimir a ciegas. Está programado en **Rust** y se distribuye como un solo `pdf-batch.exe`: no requiere instalar nada, ni Adobe Reader ni Internet en el equipo que imprime.
+
+**Traducido** al español, inglés, francés, japonés y alemán. Usa el idioma de Windows y se cambia con el selector **Idioma** (arriba a la derecha).
 
 ## Descargar
 
@@ -21,13 +23,15 @@ El avance normal es automático: no se exige confirmar cada PDF. Ante una interr
 
 Consulta [LEEME.txt](LEEME.txt) para funcionamiento, límites y recuperación.
 
-## Novedades de v2.0
+## Características
 
-- Reescrito en Rust: un solo ejecutable de unos 15 MB que arranca al instante.
+- Cola ordenada con copias locales de cada PDF y registro persistente.
+- Recuperación tras interrupciones con vista previa de la última página enviada.
+- Un solo ejecutable de unos 16 MB que arranca al instante.
 - Motor PDF **PDFium** incrustado en el ejecutable; se extrae a `%LOCALAPPDATA%\PDF-batch\runtime\` y se verifica su SHA-256 antes de cada carga.
-- **Corregido:** «Vaciar carpeta del lote» dejaba la ventana congelada. Todas las operaciones largas trabajan ahora en segundo plano.
-- Interfaz en español, inglés, francés, japonés y alemán. Usa el idioma de Windows y se cambia con el selector **Idioma**.
-- Migración automática de `%LOCALAPPDATA%\PDFLote` (v1.x) a `%LOCALAPPDATA%\PDF-batch`, con cola, copias e historial.
+- Las operaciones largas (añadir, eliminar, vaciar, imprimir) trabajan en segundo plano; la ventana nunca se congela.
+- Interfaz en 5 idiomas.
+- Importa automáticamente la cola, las copias y el historial de PDF Lote v1.x.
 
 ## Datos y límites
 

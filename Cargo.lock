@@ -2008,7 +2008,7 @@ dependencies = [
 
 [[package]]
 name = "pdf-batch-app"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -2023,7 +2023,7 @@ dependencies = [
 
 [[package]]
 name = "pdf-batch-core"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "rusqlite",
  "serde",
@@ -2036,7 +2036,7 @@ dependencies = [
 
 [[package]]
 name = "pdf-batch-print"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "pdf-batch-core",
  "pdfium-render",

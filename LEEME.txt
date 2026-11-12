@@ -1,23 +1,21 @@
-PDF-batch v2.0.0 — Windows 10/11 de 64 bits
+PDF-batch v2.1.0 — Windows 10/11 de 64 bits
 ===========================================
 Creado por siriusgoldsmith — https://github.com/siriusgoldsmith/PDF-batch
 Antes llamado PDF Lote (PDFLote). English version: README.txt
 
-NOVEDADES v2.0
-- Reescrito en Rust. Un solo archivo, pdf-batch.exe (unos 15 MB): sin Python,
-  sin carpeta runtime/ ni DLLs de Visual C++ al lado. Arranque inmediato.
+CARACTERÍSTICAS
+- Programado en Rust. Un solo archivo, pdf-batch.exe (unos 16 MB), sin carpetas
+  ni DLLs adicionales al lado. Arranque inmediato.
 - Motor PDF: PDFium (el de Chrome), incluido dentro del ejecutable. La primera
   vez se extrae a %LOCALAPPDATA%\PDF-batch\runtime\ y se verifica su SHA-256
   cada vez antes de usarlo.
-- CORREGIDO: «Vaciar carpeta del lote» dejaba la ventana congelada, sobre todo
-  con lotes grandes o PDFs que venían de unidades de red/USB desconectadas.
-  Ahora vaciar, eliminar, añadir e imprimir trabajan en segundo plano y la
-  ventana sigue respondiendo.
+- Vaciar, eliminar, añadir e imprimir trabajan en segundo plano y la ventana
+  sigue respondiendo, incluso con lotes grandes o unidades de red/USB
+  desconectadas.
 - Migración automática: al abrir por primera vez, la carpeta
   %LOCALAPPDATA%\PDFLote se mueve a %LOCALAPPDATA%\PDF-batch con su cola,
   copias e historial. Cierra PDF Lote v1.x antes; si está abierto, se avisa.
-- Misma cola, estados, recuperación con vista previa y textos que la v1.4.
-- Idiomas: español, inglés, francés, japonés y alemán. Al abrir se usa el
+- Traducido al español, inglés, francés, japonés y alemán. Al abrir se usa el
   idioma de Windows; cámbialo con el selector Idioma (arriba a la derecha).
   La elección se guarda en %LOCALAPPDATA%\PDF-batch\settings.json.
 - Validado con impresora real. Aun así, prueba primero con 2 o 3 PDFs en tu

@@ -4,9 +4,9 @@
 
 **Batch PDF printing for Windows 10/11 x64.** Created by [siriusgoldsmith](https://github.com/siriusgoldsmith). Formerly *PDF Lote*.
 
-An ordered queue, local copies of the documents and a persistent log, so you can continue after an interruption without blindly reprinting. A single `pdf-batch.exe`: nothing to install, no Adobe Reader and no Internet needed on the printing PC.
+PDF-batch prints large sets of PDFs in order and keeps track of every document, so you can continue after a paper jam, power cut or crash without blindly reprinting. It is written in **Rust** and ships as a single `pdf-batch.exe`: nothing to install, no Adobe Reader and no Internet needed on the printing PC.
 
-Interface in **English, Spanish, French, Japanese and German**. It starts in the Windows display language; change it with the **Language** selector (top right).
+**Translated** into English, Spanish, French, Japanese and German. It starts in the Windows display language; change it with the **Language** selector (top right).
 
 ## Download
 
@@ -23,12 +23,15 @@ Progress is automatic: you don't have to confirm each PDF. After an interruption
 
 See [README.txt](README.txt) for how it works, its limits and recovery.
 
-## What's new in v2.0
+## Features
 
-- Rewritten in Rust: a single ~16 MB executable that starts instantly.
+- Ordered queue with local copies of each PDF and a persistent log.
+- Recovery after interruptions with a preview of the last page sent.
+- A single ~16 MB executable that starts instantly.
 - **PDFium** engine embedded in the executable; extracted to `%LOCALAPPDATA%\PDF-batch\runtime\` and its SHA-256 is verified before every load.
-- **Fixed:** "Clear batch folder" froze the window. All long operations now run in the background.
-- Automatic migration from `%LOCALAPPDATA%\PDFLote` (v1.x) to `%LOCALAPPDATA%\PDF-batch`, with queue, copies and history.
+- Long operations (adding, removing, clearing, printing) run in the background; the window never freezes.
+- Interface in 5 languages.
+- Automatically imports the queue, copies and history of PDF Lote v1.x.
 
 ## Data and limits
 

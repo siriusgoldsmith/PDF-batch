@@ -1,23 +1,21 @@
-PDF-batch v2.0.0 — Windows 10/11 64-bit
+PDF-batch v2.1.0 — Windows 10/11 64-bit
 =======================================
 Created by siriusgoldsmith — https://github.com/siriusgoldsmith/PDF-batch
 Formerly PDF Lote (PDFLote). Spanish version: LEEME.txt
 
-WHAT'S NEW IN v2.0
-- Rewritten in Rust. A single file, pdf-batch.exe (about 16 MB): no Python,
-  no runtime/ folder and no Visual C++ DLLs next to it. Starts instantly.
+FEATURES
+- Written in Rust. A single file, pdf-batch.exe (about 16 MB), with no extra
+  folders or DLLs next to it. Starts instantly.
 - PDF engine: PDFium (the one in Chrome), embedded in the executable. The first
   time, it is extracted to %LOCALAPPDATA%\PDF-batch\runtime\ and its SHA-256 is
   verified every time before use.
-- FIXED: "Clear batch folder" froze the window, especially with large batches
-  or PDFs that came from disconnected network/USB drives. Clearing, removing,
-  adding and printing now run in the background and the window stays
-  responsive.
+- Clearing, removing, adding and printing run in the background and the
+  window stays responsive, even with large batches or disconnected network/USB
+  drives.
 - Automatic migration: on first start, the %LOCALAPPDATA%\PDFLote folder is
   moved to %LOCALAPPDATA%\PDF-batch with its queue, copies and history. Close
   PDF Lote v1.x first; if it is open, you will be told.
-- Same queue, states and recovery with preview as v1.4.
-- Languages: English, Spanish, French, Japanese and German. The app starts in
+- Translated into English, Spanish, French, Japanese and German. The app starts in
   the Windows display language; change it with the Language selector (top
   right). The choice is saved in %LOCALAPPDATA%\PDF-batch\settings.json.
 - Validated with a real printer. Still, test first with 2 or 3 PDFs on your PC.
