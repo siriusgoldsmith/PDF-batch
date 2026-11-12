@@ -4,8 +4,6 @@
 
 Una cola ordenada, copias locales de los documentos y un registro persistente para continuar tras interrupciones sin reimprimir a ciegas. Un solo `pdf-batch.exe`: no requiere instalar nada, ni Adobe Reader ni Internet en el equipo que imprime.
 
-> **v2.0 está en fase alfa.** Es una reescritura completa en Rust. La impresión con impresoras reales todavía no se ha validado: prueba primero con 2 o 3 PDFs y conserva la v1.4 a mano.
-
 ## Descargar
 
 [**Descargas y versiones**](https://github.com/siriusgoldsmith/PDF-batch/releases)

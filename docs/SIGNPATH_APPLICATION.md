@@ -19,9 +19,9 @@ The required First Name, Last Name and Email must be provided privately by the o
 
 ## CI activation
 
-[Candidate workflow](windows-build.workflow.yml). It is a template in `docs/`, not an enabled GitHub Actions workflow. The current GitHub authorization does not include `workflow`; upgrading that authorization requires the owner's permission and potentially a browser confirmation. Do not store GitHub tokens in the repository or ask the owner to paste them into an issue.
+[Active workflow](../.github/workflows/windows-build.yml). It is enabled in GitHub Actions and its first run passed. Do not store GitHub tokens in the repository or ask the owner to paste them into an issue.
 
-The template uses immutable commit pins for the official checkout action (artifact-upload still to be pinned), read-only repository permissions, no signing credentials, and a single Windows job. It runs the Rust test suite, downloads PDFium from bblanchon/pdfium-binaries and records its hash, builds an unsigned EXE, and preserves the resulting artifact and evidence. Syntax checks do not establish a working CI run.
+The workflow uses immutable commit pins for the official checkout and artifact-upload actions, read-only repository permissions, no signing credentials, and a single Windows job. It runs the Rust test suite, downloads PDFium from bblanchon/pdfium-binaries and records its hash, builds an unsigned EXE, and preserves the resulting artifact and evidence. Syntax checks do not establish a working CI run.
 
 After approval of GitHub workflow access: move the candidate to `.github/workflows/windows-build.yml`, run it, fix any native Windows failures, and retain the successful run/commit/artifact links. Only then update the application with truthful CI provenance. SignPath integration and signed releases require separate project approval and configuration by SignPath; do not invent organization IDs, certificate IDs, signing policies or API keys.
 
