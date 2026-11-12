@@ -8,84 +8,41 @@ on:
   pull_request:
 permissions:
   contents: read
+env:
+  PDFIUM_RELEASE: chromium/8152
 jobs:
-  core-linux:
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.11.9'
-      - run: python -m unittest test_core test_physical test_queue_cleanup test_cleanup_legacy -v
-  windows-build:
-    runs-on: windows-latest
-    needs: core-linux
-    timeout-minutes: 25
-    defaults:
-      run:
+      - name: Rust toolchain
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - name: Download PDFium
         shell: pwsh
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download $env:PDFIUM_RELEASE --repo bblanchon/pdfium-binaries -p pdfium-win-x64.tgz -D vendor/pdfium
+          tar -xzf vendor/pdfium/pdfium-win-x64.tgz -C vendor/pdfium
+          Get-FileHash vendor/pdfium/bin/pdfium.dll -Algorithm SHA256 | Tee-Object pdfium-sha256.txt
+      - name: Tests
+        run: cargo test --workspace --locked 2>&1 | Tee-Object tests.log
+        shell: pwsh
+      - name: Build release
+        run: cargo build --release --locked -p pdf-batch-app
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item target/release/pdf-batch.exe, README.md, LEEME.txt, COPYING, THIRD_PARTY.txt, PRIVACY.md dist/
+          Copy-Item licenses dist/licenses -Recurse
+          Get-FileHash dist/pdf-batch.exe -Algorithm SHA256 | Format-List | Out-File dist/SHA256.txt
+      - uses: actions/upload-artifact@v4 # TODO: fijar al SHA del commit antes de activar
         with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.11.9'
-          architecture: x64
-          cache: pip
-      - name: Install pinned Python dependencies
-        run: |
-          python -m pip install -r requirements.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
-      - name: Prepare installed Microsoft runtime
-        run: |
-          New-Item -ItemType Directory -Force runtime | Out-Null
-          Copy-Item "$env:WINDIR\System32\msvcp140*.dll" runtime\ -ErrorAction Stop
-          Copy-Item "$env:WINDIR\System32\vcruntime140*.dll" runtime\ -ErrorAction Stop
-      - name: Test source
-        run: |
-          python -m unittest discover -v 2>&1 | Tee-Object tests-source.log
-          if ($LASTEXITCODE -ne 0) { throw 'Source tests failed' }
-      - name: Build real Windows EXE
-        run: |
-          python -m PyInstaller --noconfirm --clean PDFLote.spec
-          if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
-      - name: Run compiled EXE diagnostic without printing
-        run: |
-          $process = Start-Process -FilePath .\dist\PDFLote.exe -ArgumentList '--diagnostico','qa-frozen.json' -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw 'Frozen diagnostic failed' }
-          if (-not (Test-Path qa-frozen.json)) { throw 'Missing diagnostic result' }
-          $report = Get-Content qa-frozen.json -Raw | ConvertFrom-Json
-          if (-not $report.frozen -or -not $report.recovery_preview_rendered -or -not $report.custom_boundary_and_no_repeat) { throw 'Diagnostic assertions failed' }
-      - name: Test with frozen archive check enabled
-        run: |
-          $env:PDFLOTE_CHECK_FROZEN='1'
-          python -m unittest discover -v 2>&1 | Tee-Object tests-frozen.log
-          if ($LASTEXITCODE -ne 0) { throw 'Frozen regression tests failed' }
-          python qa_gui.py
-          if ($LASTEXITCODE -ne 0) { throw 'GUI diagnostic failed' }
-          Get-FileHash dist/PDFLote.exe -Algorithm SHA256 | Format-List | Out-File exe-sha256.txt
-      - name: Preserve unsigned artifact and verification evidence
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: PDFLote-unsigned-${{ github.sha }}
-          if-no-files-found: error
+          name: pdf-batch-unsigned
           path: |
-            dist/PDFLote.exe
-            exe-sha256.txt
-            qa-frozen.json
-            qa-gui.json
-            tests-source.log
-            tests-frozen.log
-      - name: Preserve failure logs
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: PDFLote-build-failure-${{ github.sha }}
-          if-no-files-found: ignore
-          path: |
-            *.log
-            qa-*.json
-            build/PDFLote/warn-PDFLote.txt
+            dist/
+            tests.log
+            pdfium-sha256.txt

@@ -1,12 +1,10 @@
-# Build outputs and local environments
-.venv/
-venv/
-__pycache__/
-*.py[cod]
-build/
-dist/
+# Build outputs
+/target/
+/dist/
 *.log
-*.egg-info/
+
+# PDFium binaries are downloaded at build time (see README), never committed.
+/vendor/
 
 # Operator documents, history, credentials and local backups
 backups/
@@ -15,6 +13,7 @@ backups/
 *.db
 *.db-*
 *.lock
+!Cargo.lock
 .env
 .env.*
 *.pfx
@@ -26,8 +25,3 @@ backups/
 qa-*.json
 qa-*.png
 SHA256.txt
-
-# Obtain vendor runtime from an authorized Windows installation at build time.
-runtime/*.dll
-
-# Commit only audited source, original assets and notices.

@@ -2,7 +2,7 @@
 
 ## Estado actual: preparación de solicitud, sin aprobación
 
-PDFLote es mantenido por [siriusgoldsmith](https://github.com/siriusgoldsmith). Se prepara una solicitud al programa gratuito de SignPath Foundation para futuras versiones. **Todavía no existe un certificado de SignPath asignado al proyecto ni una versión firmada mediante ese programa.** No se debe presentar v1.4 como firmada ni anunciar una v1.5 firmada antes de verificarla.
+PDF-batch (antes PDFLote) es mantenido por [siriusgoldsmith](https://github.com/siriusgoldsmith). Se prepara una solicitud al programa gratuito de SignPath Foundation para futuras versiones. **Todavía no existe un certificado de SignPath asignado al proyecto ni una versión firmada mediante ese programa.** No se debe presentar v1.4 como firmada ni anunciar una v1.5 firmada antes de verificarla.
 
 Si SignPath aprueba el proyecto, el editor del certificado será **SignPath Foundation**, no siriusgoldsmith. La autoría del proyecto seguirá siendo siriusgoldsmith. La atribución que se incorporará una vez aprobado el servicio es: “Free code signing provided by SignPath.io, certificate by SignPath Foundation”. Esta frase describe la atribución futura, no un patrocinio ya concedido.
 
@@ -24,6 +24,6 @@ El proyecto no intenta eludir SmartScreen, instalar certificados raíz en los eq
 
 ## Privacidad
 
-[Política de privacidad](PRIVACY.md). PDFLote no transfiere información a otros sistemas salvo petición del operador, por ejemplo imprimir en una impresora de red elegida, exportar un informe o abrir el enlace a GitHub.
+[Política de privacidad](PRIVACY.md). PDF-batch no transfiere información a otros sistemas salvo petición del operador, por ejemplo imprimir en una impresora de red elegida, exportar un informe o abrir el enlace a GitHub.
 
 Condiciones del programa: https://signpath.org/terms

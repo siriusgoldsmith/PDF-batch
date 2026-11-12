@@ -1,32 +1,34 @@
-PDF Lote v1.4 — Windows 10/11 de 64 bits
-=======================================
-Creado por siriusgoldsmith — https://github.com/siriusgoldsmith
+PDF-batch v2.0.0-alpha.1 — Windows 10/11 de 64 bits
+====================================================
+Creado por siriusgoldsmith — https://github.com/siriusgoldsmith/PDF-batch
+Antes llamado PDF Lote (PDFLote).
 
-NOVEDADES v1.4
-- Interfaz revisada: tabla con más espacio para nombres, acciones de archivos
-  separadas de la impresión, inicio destacado y mensajes más breves.
-- Ventana de escritorio desde 960 x 640; controles y popup revisados sin recortes.
-- PDFs por lote es editable. Elige 20, 50, 100 o Todos, o escribe cualquier
-  cantidad entera positiva: por ejemplo, 7, 35 o 250. No hay un límite artificial
-  de 100. Si quedan menos documentos, imprime sólo los disponibles.
-- Se rechazan valores vacíos, cero, negativos, decimales y texto. Escribe los
-  números sin separadores (1000, no 1.000). La validación no envía trabajos.
-- Se eliminó la columna Salida física, sus botones y los avisos para confirmar
-  documentos uno por uno. El avance normal se registra automáticamente.
-- Sólo se solicita revisión ante una interrupción o error, mediante el preview.
-- Las observaciones históricas de versiones anteriores siguen en el registro:
-  no se borran ni se convierten automáticamente en éxitos. Una interrupción
-  antigua pendiente de resolver continúa protegida hasta que la resuelvas.
+NOVEDADES v2.0 (ALFA)
+- Reescrito en Rust. Un solo archivo, pdf-batch.exe (unos 15 MB): sin Python,
+  sin carpeta runtime/ ni DLLs de Visual C++ al lado. Arranque inmediato.
+- Motor PDF: PDFium (el de Chrome), incluido dentro del ejecutable. La primera
+  vez se extrae a %LOCALAPPDATA%\PDF-batch\runtime\ y se verifica su SHA-256
+  cada vez antes de usarlo.
+- CORREGIDO: «Vaciar carpeta del lote» dejaba la ventana congelada, sobre todo
+  con lotes grandes o PDFs que venían de unidades de red/USB desconectadas.
+  Ahora vaciar, eliminar, añadir e imprimir trabajan en segundo plano y la
+  ventana sigue respondiendo.
+- Migración automática: al abrir por primera vez, la carpeta
+  %LOCALAPPDATA%\PDFLote se mueve a %LOCALAPPDATA%\PDF-batch con su cola,
+  copias e historial. Cierra PDF Lote v1.x antes; si está abierto, se avisa.
+- Misma cola, estados, recuperación con vista previa y textos que la v1.4.
+- ALFA: la impresión con impresora real aún no está validada. Prueba primero
+  con 2 o 3 PDFs y conserva la v1.4 a mano.
 
 USO
-1. Cierra la versión anterior, extrae el ZIP en una carpeta nueva y abre
-   PDFLote.exe. No necesitas Python, Adobe Reader ni Internet para imprimir.
-   No borres %LOCALAPPDATA%\PDFLote: ahí se conserva tu lote anterior.
+1. Cierra la versión anterior y abre pdf-batch.exe. No necesitas instalar nada,
+   ni Adobe Reader ni Internet para imprimir. No borres %LOCALAPPDATA%\PDF-batch
+   (o PDFLote si aún no migraste): ahí se conserva tu lote.
 2. Añade PDFs. Se agregan al final en el orden visible. Añadir carpeta ordena
    por nombre, sin subcarpetas. Windows puede entregar una selección múltiple
    ordenada por nombre y no por los clics. Revisa el orden; usa Subir/Bajar
    sobre documentos pendientes o añádelos uno por uno si necesitas otro orden.
-3. Elige impresora y configura papel, bandeja, color y dúplex en Ajustes Windows
+   Ctrl+clic selecciona varios documentos.
    ANTES de iniciar. Esos ajustes se aplican a todos los PDFs del grupo.
 4. Selecciona o escribe cuántos PDFs enviar por lote. La unidad es DOCUMENTOS,
    no páginas. Todos procesa los pendientes disponibles hasta un bloqueo.
@@ -87,7 +89,7 @@ LIMITACIONES Y PRUEBA INICIAL
 
 DATOS Y PRIVACIDAD
 Los originales no cambian. Copias, historial y registro quedan en:
-%LOCALAPPDATA%\PDFLote\
+%LOCALAPPDATA%\PDF-batch\
 Necesitas espacio para una copia de todos los PDFs. Puede contener datos sensibles;
 protege tu cuenta y no compartas esa carpeta ni informes con rutas personales.
 No se envían PDFs a servidores ni se incorpora telemetría. El informe JSON contiene
@@ -98,6 +100,6 @@ sesiones de Windows. No borres queue.lock para abrir otra instancia.
 AUTOR Y LICENCIAS
 Firma visual: siriusgoldsmith. No es un certificado digital de Windows.
 SmartScreen puede mostrar editor desconocido. No desactives el antivirus.
-Fuentes y pruebas incluidas en fuentes/. Dependencias: Python/Tk, PyMuPDF (AGPL),
-Pillow y pywin32. Distribución bajo GNU AGPL v3 o posterior. Consulta COPYING,
-THIRD_PARTY.txt y licenses/ para licencias y referencias de dependencias.
+Código fuente: https://github.com/siriusgoldsmith/PDF-batch. Motor PDF: PDFium
+(BSD/Apache), incluido en el ejecutable. Distribución bajo GNU AGPL v3 o
+posterior. Consulta COPYING, THIRD_PARTY.txt y licenses/ para licencias y referencias de dependencias.
