@@ -1,33 +1,27 @@
-PDF Lote - fuentes de esta aplicación incluidas en fuentes/.
-Licencia de PDF Lote: GNU Affero General Public License v3 o posterior.
+PDF-batch — código fuente: https://github.com/siriusgoldsmith/PDF-batch
+Licencia de PDF-batch: GNU Affero General Public License v3 o posterior.
 Texto completo en COPYING. Sin garantía; uso bajo responsabilidad del operador.
 
-Microsoft Visual C++ Runtime x64 (redistributable binaries):
-  Procedencia oficial: https://aka.ms/vs/17/release/vc_redist.x64.exe
-  Se incluyen DLLs app-local del runtime mínimo, no DLLs de Wine.
-  Condiciones: licenses/Microsoft-VC-Runtime-license.rtf
-  El repositorio público no redistribuye DLLs de Microsoft por separado.
-  Para reconstruir, prepara runtime/ a partir de una instalación autorizada
-  del runtime oficial en Windows; consulta README.md.
+Incluido dentro de pdf-batch.exe:
 
-Dependencias de ejecución:
-Python 3.11.9 / Tk 8.6: PSF / Tcl-Tk BSD-style licenses
-  https://www.python.org/downloads/release/python-3119/
-  https://github.com/python/cpython/tree/v3.11.9
-PyMuPDF 1.26.7 / MuPDF: GNU AGPL v3 o licencia comercial del proveedor
-  En esta distribución se usa la opción AGPL.
-  https://github.com/pymupdf/PyMuPDF/tree/1.26.7
-  https://github.com/ArtifexSoftware/mupdf
-  https://pypi.org/project/PyMuPDF/1.26.7/#files
-Pillow 12.3.0: HPND / license texts in licenses/
-  https://github.com/python-pillow/Pillow/tree/12.3.0
-pywin32 312: PSF-style license
-  https://github.com/mhammond/pywin32/tree/b312
-PyInstaller 6.22.3: GPL with bootloader distribution exception
-  https://github.com/pyinstaller/pyinstaller/tree/v6.22.3
+PDFium (chromium/8152), binarios de bblanchon/pdfium-binaries
+  PDFium: BSD-3-Clause / Apache-2.0 — https://pdfium.googlesource.com/pdfium/
+  Compilación: MIT — https://github.com/bblanchon/pdfium-binaries
+  PDFium incorpora FreeType, HarfBuzz, ICU, libjpeg-turbo, libpng, OpenJPEG,
+  Little CMS, zlib, Abseil, AGG, Highway, fast_float, dragonbox y simdutf.
+  Licencias completas en licenses/pdfium/.
 
-Los avisos de licencia disponibles en las distribuciones instaladas se
-incluyen en licenses/. No afiliado a los autores de estas dependencias.
-Las dependencias de construcción están fijadas en fuentes/requirements.txt;
-fuentes/build-windows.bat permite reproducir el ejecutable en Windows.
-No se incluyen documentos del usuario ni credenciales.
+Crates de Rust (enlazadas estáticamente; versiones exactas en Cargo.lock):
+  rusqlite + SQLite (MIT / dominio público), egui / eframe / egui_extras
+  (MIT o Apache-2.0), pdfium-render (MIT o Apache-2.0), windows-rs
+  (MIT o Apache-2.0), rfd (MIT), serde / serde_json (MIT o Apache-2.0),
+  sha2 (MIT o Apache-2.0), uuid (MIT o Apache-2.0), image (MIT o Apache-2.0),
+  thiserror (MIT o Apache-2.0) y sus dependencias transitivas, todas con
+  licencias permisivas compatibles con la AGPL.
+  Lista completa: cargo tree --workspace -e normal
+
+Runtime de C de Microsoft: enlazado estáticamente por el compilador MSVC
+  (crt-static); no se distribuyen DLLs de Visual C++.
+
+No afiliado a los autores de estas dependencias. No se incluyen documentos del
+usuario ni credenciales.
