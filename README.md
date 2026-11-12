@@ -1,64 +1,72 @@
 # PDF-batch
 
-**Impresión de PDFs por lotes para Windows 10/11 x64.** Creado por [siriusgoldsmith](https://github.com/siriusgoldsmith). Antes llamado *PDF Lote*.
+**English** · [Español](README.es.md)
 
-Una cola ordenada, copias locales de los documentos y un registro persistente para continuar tras interrupciones sin reimprimir a ciegas. Un solo `pdf-batch.exe`: no requiere instalar nada, ni Adobe Reader ni Internet en el equipo que imprime.
+**Batch PDF printing for Windows 10/11 x64.** Created by [siriusgoldsmith](https://github.com/siriusgoldsmith). Formerly *PDF Lote*.
 
-## Descargar
+An ordered queue, local copies of the documents and a persistent log, so you can continue after an interruption without blindly reprinting. A single `pdf-batch.exe`: nothing to install, no Adobe Reader and no Internet needed on the printing PC.
 
-[**Descargas y versiones**](https://github.com/siriusgoldsmith/PDF-batch/releases)
+Interface in **English, Spanish, French, Japanese and German**. It starts in the Windows display language; change it with the **Language** selector (top right).
 
-Los ejecutables publicados **no tienen firma digital de confianza**. Windows puede mostrar «Editor desconocido». No desactives el antivirus ni cambies las políticas de seguridad para usarlos. Se está preparando la solicitud de firma a **SignPath Foundation**; la solicitud no implica aprobación ni que los archivos actuales estén firmados.
+## Download
 
-1. Cierra PDF Lote v1.x si lo tienes abierto y abre `pdf-batch.exe`.
-2. Añade PDFs, revisa el orden y selecciona impresora.
-3. Elige 20, 50, 100, Todos o escribe una cantidad entera positiva.
-4. Inicia el grupo. El contador registra documentos finalizados según Windows, no certifica salida física.
+[**Downloads and releases**](https://github.com/siriusgoldsmith/PDF-batch/releases)
 
-El avance normal es automático: no se exige confirmar cada PDF. Ante una interrupción se abre una vista previa de la última página registrada para elegir desde dónde continuar. Eliminar PDF y Vaciar carpeta del lote conservan siempre los archivos originales.
+The published executables **are not signed with a trusted certificate**. Windows may show "Unknown publisher". Do not disable your antivirus or change security policies to run them. An application to **SignPath Foundation** for code signing is being prepared; it does not mean approval, nor that the current files are signed.
 
-Consulta [LEEME.txt](LEEME.txt) para funcionamiento, límites y recuperación.
+1. Close PDF Lote v1.x if it is open, then open `pdf-batch.exe`.
+2. Add PDFs, check the order and select a printer.
+3. Choose 20, 50, 100, All, or type a positive whole number.
+4. Start the batch. The counter tracks documents finished according to Windows; it does not certify physical output.
 
-## Novedades de v2.0
+Progress is automatic: you don't have to confirm each PDF. After an interruption, a preview of the last recorded page opens so you can choose where to continue. Remove PDF and Clear batch folder never delete the original files.
 
-- Reescrito en Rust: un solo ejecutable de unos 15 MB que arranca al instante.
-- Motor PDF **PDFium** incrustado en el ejecutable; se extrae a `%LOCALAPPDATA%\PDF-batch\runtime\` y se verifica su SHA-256 antes de cada carga.
-- **Corregido:** «Vaciar carpeta del lote» dejaba la ventana congelada. Todas las operaciones largas trabajan ahora en segundo plano.
-- Migración automática de `%LOCALAPPDATA%\PDFLote` (v1.x) a `%LOCALAPPDATA%\PDF-batch`, con cola, copias e historial.
+See [README.txt](README.txt) for how it works, its limits and recovery.
 
-## Datos y límites
+## What's new in v2.0
 
-- Registro y copias: `%LOCALAPPDATA%\PDF-batch`. No borres esa carpeta al actualizar.
-- Sin telemetría ni envío de PDFs a servidores. Se utiliza la impresora elegida por el operador, incluida una impresora de red si así se configura.
-- Los informes exportados pueden contener rutas y metadatos sensibles.
-- Las páginas se rasterizan a 150 ppp y se ajustan al área imprimible; no se garantiza escala 100 %.
-- Windows no puede certificar genéricamente cuál fue la última hoja física tras un corte.
-- Prueba primero con pocos documentos y tu impresora real. Las pruebas automáticas y las simulaciones de transporte no sustituyen la validación de hardware.
+- Rewritten in Rust: a single ~16 MB executable that starts instantly.
+- **PDFium** engine embedded in the executable; extracted to `%LOCALAPPDATA%\PDF-batch\runtime\` and its SHA-256 is verified before every load.
+- **Fixed:** "Clear batch folder" froze the window. All long operations now run in the background.
+- Automatic migration from `%LOCALAPPDATA%\PDFLote` (v1.x) to `%LOCALAPPDATA%\PDF-batch`, with queue, copies and history.
 
-[Política de privacidad](PRIVACY.md) · [Code signing policy](SIGNING.md) · [Preparación de la solicitud](docs/SIGNPATH_APPLICATION.md)
+## Data and limits
 
-## Construir desde las fuentes
+- Log and copies: `%LOCALAPPDATA%\PDF-batch`. Do not delete that folder when updating.
+- No telemetry and no PDFs sent to servers. The printer chosen by the operator is used, including a network printer if configured.
+- Exported reports may contain sensitive paths and metadata.
+- Pages are rasterized at 150 dpi and fitted to the printable area; 100 % scale is not guaranteed.
+- Windows cannot generically certify which sheet was physically printed last after an interruption.
+- Test first with a few documents and your real printer.
 
-Windows x64 con [Rust](https://rustup.rs) (toolchain `stable-x86_64-pc-windows-msvc`) y Visual Studio Build Tools con «Desarrollo para el escritorio con C++».
+[Privacy policy](PRIVACY.md) · [Code signing policy](SIGNING.md) · [Signing application](docs/SIGNPATH_APPLICATION.md)
 
-1. Descarga `pdfium-win-x64.tgz` de [bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries/releases) y extráelo en `vendor/pdfium/` (debe quedar `vendor/pdfium/bin/pdfium.dll`). Otra ruta: variable `PDFIUM_DLL`.
-2. En PowerShell (no en Git Bash, cuyo `link.exe` tapa al de MSVC):
+## Building from source
+
+Windows x64 with [Rust](https://rustup.rs) (toolchain `stable-x86_64-pc-windows-msvc`) and Visual Studio Build Tools with "Desktop development with C++".
+
+1. Download `pdfium-win-x64.tgz` from [bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries/releases) and extract it to `vendor/pdfium/` (you should get `vendor/pdfium/bin/pdfium.dll`). Other path: `PDFIUM_DLL` environment variable.
+2. In PowerShell (not Git Bash, whose `link.exe` shadows MSVC's):
 
 ```powershell
 cargo test --workspace
 cargo build --release -p pdf-batch-app
 ```
 
-El ejecutable queda en `target/release/pdf-batch.exe`, con PDFium y el runtime de C incluidos. Construirlo **no lo firma**.
+The executable is `target/release/pdf-batch.exe`, with PDFium and the C runtime included. Building it **does not sign it**.
 
-| Crate | Contenido |
+| Crate | Contents |
 |---|---|
-| `crates/pdf-batch-core` | Cola SQLite duradera y auditada (compatible con la base de datos de v1.x) |
-| `crates/pdf-batch-print` | Renderizado PDFium, impresión GDI, espera del spooler y worker del lote |
-| `crates/pdf-batch-app` | Interfaz de escritorio (egui), instancia única y migración de datos |
+| `crates/pdf-batch-core` | Durable, audited SQLite queue (compatible with the v1.x database) |
+| `crates/pdf-batch-print` | PDFium rendering, GDI printing, spooler wait and batch worker |
+| `crates/pdf-batch-app` | Desktop interface (egui), translations, single instance and data migration |
 
-`cargo run -p pdf-batch-core --example seed -- <carpeta>` crea una cola de demostración para revisar la interfaz sin imprimir.
+`cargo run -p pdf-batch-core --example seed -- <folder>` creates a demo queue to review the interface without printing.
 
-## Autoría y licencia
+### Translations
 
-Autor y mantenedor: **siriusgoldsmith**. GNU Affero General Public License v3 o posterior; texto en [COPYING](COPYING). Dependencias y avisos en [THIRD_PARTY.txt](THIRD_PARTY.txt) y `licenses/`. Sin garantía.
+All interface texts are in [`crates/pdf-batch-app/src/i18n.rs`](crates/pdf-batch-app/src/i18n.rs): one key per text and one column per language (en, es, fr, ja, de). Tests check that every key used exists and that every language has the same placeholders. Corrections from native speakers are welcome.
+
+## Authorship and license
+
+Author and maintainer: **siriusgoldsmith**. GNU Affero General Public License v3 or later; text in [COPYING](COPYING). Dependencies and notices in [THIRD_PARTY.txt](THIRD_PARTY.txt) and `licenses/`. No warranty.

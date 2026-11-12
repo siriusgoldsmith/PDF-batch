@@ -15,7 +15,7 @@ fn main() {
     for (i, id) in ids.iter().take(3).enumerate() {
         store.claim(*id, "Kyocera ECOSYS PA5500x KX SANDRA").unwrap();
         store.progress(*id, 1, Some(1), Some(&(40 + i).to_string())).unwrap();
-        if i < 2 { store.mark_sent(*id).unwrap() } else { store.fail(*id, "Trabajo 42: error de impresión (estado 2).").unwrap() }
+        if i < 2 || std::env::var_os("SEED_NO_INTERRUPTION").is_some() { store.mark_sent(*id).unwrap() } else { store.fail(*id, "Trabajo 42: error de impresión (estado 2).").unwrap() }
     }
     println!("cola de demostración en {}", dir.display());
 }

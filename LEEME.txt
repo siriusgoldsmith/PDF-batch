@@ -1,7 +1,7 @@
 PDF-batch v2.0.0 — Windows 10/11 de 64 bits
 ===========================================
 Creado por siriusgoldsmith — https://github.com/siriusgoldsmith/PDF-batch
-Antes llamado PDF Lote (PDFLote).
+Antes llamado PDF Lote (PDFLote). English version: README.txt
 
 NOVEDADES v2.0
 - Reescrito en Rust. Un solo archivo, pdf-batch.exe (unos 15 MB): sin Python,
@@ -17,6 +17,9 @@ NOVEDADES v2.0
   %LOCALAPPDATA%\PDFLote se mueve a %LOCALAPPDATA%\PDF-batch con su cola,
   copias e historial. Cierra PDF Lote v1.x antes; si está abierto, se avisa.
 - Misma cola, estados, recuperación con vista previa y textos que la v1.4.
+- Idiomas: español, inglés, francés, japonés y alemán. Al abrir se usa el
+  idioma de Windows; cámbialo con el selector Idioma (arriba a la derecha).
+  La elección se guarda en %LOCALAPPDATA%\PDF-batch\settings.json.
 - Validado con impresora real. Aun así, prueba primero con 2 o 3 PDFs en tu
   equipo.
 
@@ -29,7 +32,8 @@ USO
    ordenada por nombre y no por los clics. Revisa el orden; usa Subir/Bajar
    sobre documentos pendientes o añádelos uno por uno si necesitas otro orden.
    Ctrl+clic selecciona varios documentos.
-   ANTES de iniciar. Esos ajustes se aplican a todos los PDFs del grupo.
+3. Selecciona la impresora. Revisa papel, bandeja, color y dúplex en Ajustes
+   Windows ANTES de iniciar. Esos ajustes se aplican a todos los PDFs del grupo.
 4. Selecciona o escribe cuántos PDFs enviar por lote. La unidad es DOCUMENTOS,
    no páginas. Todos procesa los pendientes disponibles hasta un bloqueo.
 5. Pulsa Iniciar / continuar y acepta la confirmación con la cantidad efectiva.

@@ -13,6 +13,9 @@ use pdf_batch_core::{recovery_reference, Item, QueueStore, Resolution};
 use pdf_batch_print::{self as printing, BatchEvent, BatchOutcome, Document};
 use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
+use crate::i18n::{self, engine, t};
+use crate::tf;
+
 const NAVY: Color32 = Color32::from_rgb(0x17, 0x3d, 0x60);
 const MUTED: Color32 = Color32::from_rgb(0x63, 0x74, 0x8a);
 const DANGER: Color32 = Color32::from_rgb(0xa4, 0x32, 0x32);
@@ -20,20 +23,20 @@ const WARN: Color32 = Color32::from_rgb(0x92, 0x40, 0x0e);
 
 fn state_label(s: &str) -> &'static str {
     match s {
-        "pending" => "Pendiente",
-        "in_flight" => "En proceso",
-        "uncertain" => "Revisar interrupción",
-        "sent" => "Finalizado",
-        "skipped" => "Omitido",
-        _ => "Error",
+        "pending" => t("state.pending"),
+        "in_flight" => t("state.in_flight"),
+        "uncertain" => t("state.uncertain"),
+        "sent" => t("state.sent"),
+        "skipped" => t("state.skipped"),
+        _ => t("state.error"),
     }
 }
 
 fn outcome_label(s: &str) -> &'static str {
     match s {
-        "completed" => "Finalizado según Windows",
-        "review" => "Error / por revisar",
-        _ => "Sin resultado registrado",
+        "completed" => t("outcome.completed"),
+        "review" => t("outcome.review"),
+        _ => t("outcome.none"),
     }
 }
 
@@ -59,6 +62,25 @@ fn ask(title: &str, text: &str) -> bool {
 
 fn info(title: &str, text: &str, level: MessageLevel) {
     MessageDialog::new().set_level(level).set_title(title).set_description(text).show();
+}
+
+/// egui's built-in fonts have no Japanese glyphs: use a Windows Japanese font.
+/// Returns false if no suitable font was found.
+fn install_cjk_font(ctx: &egui::Context) -> bool {
+    let fonts_dir = std::env::var_os("WINDIR").map_or_else(|| PathBuf::from(r"C:\Windows"), PathBuf::from).join("Fonts");
+    for file in ["YuGothM.ttc", "meiryo.ttc", "msgothic.ttc"] {
+        if let Ok(bytes) = std::fs::read(fonts_dir.join(file)) {
+            let mut fonts = egui::FontDefinitions::default();
+            fonts.font_data.insert("cjk".into(), egui::FontData::from_owned(bytes));
+            // First, not fallback: mixing it with egui's Latin font misaligns the baselines.
+            for family in [egui::FontFamily::Proportional, egui::FontFamily::Monospace] {
+                fonts.families.entry(family).or_default().insert(0, "cjk".into());
+            }
+            ctx.set_fonts(fonts);
+            return true;
+        }
+    }
+    false
 }
 
 enum Msg {
@@ -89,10 +111,11 @@ pub struct App {
     tx: Sender<Msg>,
     rx: Receiver<Msg>,
     status: String,
-    batch_count: String,
-    progress: (usize, usize),
+    /// `(completed, target)` of the current batch, if one was started.
+    batch: Option<(usize, usize)>,
     recovery: Option<Recovery>,
     checked_interruption: bool,
+    cjk_font: bool,
 }
 
 impl App {
@@ -112,20 +135,44 @@ impl App {
             selected: BTreeSet::new(),
             printers: Vec::new(),
             printer: String::new(),
-            batch_size: "Todos".into(),
+            batch_size: t("all").into(),
             busy: false,
             pause: Arc::new(AtomicBool::new(false)),
             tx,
             rx,
-            status: "Listo. El avance se guarda automáticamente; no necesitas confirmar cada PDF.".into(),
-            batch_count: "Lote: sin iniciar".into(),
-            progress: (0, 1),
+            status: t("ready").into(),
+            batch: None,
             recovery: None,
             checked_interruption: false,
+            cjk_font: false,
         };
+        if i18n::code() == "ja" {
+            app.cjk_font = install_cjk_font(&cc.egui_ctx);
+        }
         app.refresh_printers();
         app.refresh();
         app
+    }
+
+    fn set_language(&mut self, ctx: &egui::Context, index: usize) {
+        if index == i18n::current() {
+            return;
+        }
+        let all_selected = i18n::is_all(&self.batch_size);
+        i18n::set(index);
+        if i18n::code() == "ja" && !self.cjk_font {
+            self.cjk_font = install_cjk_font(ctx);
+        } else if i18n::code() != "ja" && self.cjk_font {
+            ctx.set_fonts(egui::FontDefinitions::default());
+            self.cjk_font = false;
+        }
+        let _ = i18n::save(&self.data_dir);
+        if all_selected {
+            self.batch_size = t("all").into();
+        }
+        if !self.busy {
+            self.status = t("ready").into();
+        }
     }
 
     fn refresh(&mut self) {
@@ -134,7 +181,7 @@ impl App {
                 self.selected.retain(|id| items.iter().any(|i| i.id == *id));
                 self.items = items;
             }
-            Err(e) => self.status = format!("No se pudo leer la cola: {e}"),
+            Err(e) => self.status = tf!("readQueueFailed", e),
         }
     }
 
@@ -145,20 +192,20 @@ impl App {
             self.printer = def.or_else(|| self.printers.first().cloned()).unwrap_or_default();
         }
         if self.printers.is_empty() {
-            self.status = "No hay impresoras disponibles. Instala una en Windows y pulsa Actualizar.".into();
+            self.status = t("noPrinters").into();
         }
     }
 
     fn summary(&self) -> String {
         let c = |s: &str| self.items.iter().filter(|i| i.state == s).count();
-        format!(
-            "{} PDFs · {} pendientes · {} finalizados · {} en proceso · {} por revisar",
-            self.items.len(),
-            c("pending"),
-            c("sent"),
-            c("in_flight"),
-            c("uncertain")
-        )
+        tf!("summary", self.items.len(), c("pending"), c("sent"), c("in_flight"), c("uncertain"))
+    }
+
+    fn batch_label(&self) -> String {
+        match self.batch {
+            Some((done, target)) => tf!("batchProgress", done, target),
+            None => t("batchNotStarted").into(),
+        }
     }
 
     /// Run `job` on a worker thread; the window stays responsive meanwhile.
@@ -176,20 +223,13 @@ impl App {
     // ------------------------------------------------------------ actions
 
     fn add_files(&mut self, ctx: &egui::Context) {
-        if let Some(paths) = rfd::FileDialog::new()
-            .set_title("Añadir PDFs: revisa luego el orden en la lista")
-            .add_filter("PDF", &["pdf", "PDF"])
-            .pick_files()
-        {
+        if let Some(paths) = rfd::FileDialog::new().set_title(t("dlgAddFiles")).add_filter("PDF", &["pdf", "PDF"]).pick_files() {
             self.add_paths(ctx, paths);
         }
     }
 
     fn add_folder(&mut self, ctx: &egui::Context) {
-        let Some(folder) = rfd::FileDialog::new()
-            .set_title("Añadir PDFs de una carpeta (orden por nombre, sin subcarpetas)")
-            .pick_folder()
-        else {
+        let Some(folder) = rfd::FileDialog::new().set_title(t("dlgAddFolder")).pick_folder() else {
             return;
         };
         let mut paths: Vec<PathBuf> = std::fs::read_dir(&folder)
@@ -201,32 +241,31 @@ impl App {
             .unwrap_or_default();
         paths.sort_by_key(|p| p.file_name().map(|n| n.to_string_lossy().to_lowercase()));
         if paths.is_empty() {
-            info("Carpeta vacía", "No hay archivos PDF en esta carpeta.", MessageLevel::Info);
+            info(t("emptyFolderTitle"), t("emptyFolderText"), MessageLevel::Info);
         } else {
             self.add_paths(ctx, paths);
         }
     }
 
     fn add_paths(&mut self, ctx: &egui::Context, paths: Vec<PathBuf>) {
-        self.spawn(ctx, "Validando PDFs y guardando copias del lote…", move |store, _| {
+        self.spawn(ctx, t("validating"), move |store, _| {
             let check = || -> Result<(), String> {
                 let pdfium = printing::pdfium().map_err(|e| e.to_string())?;
                 for p in &paths {
                     let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                    let doc = Document::open(pdfium, p)
-                        .map_err(|_| format!("PDF inválido o protegido con contraseña: {name}"))?;
+                    let doc = Document::open(pdfium, p).map_err(|_| tf!("invalidPdf", name))?;
                     if doc.page_count() < 1 {
-                        return Err(format!("PDF inválido o vacío: {name}"));
+                        return Err(tf!("emptyPdf", name));
                     }
                     if !(0..doc.page_count()).all(|i| doc.page_ok(i)) {
-                        return Err(format!("PDF dañado: {name}"));
+                        return Err(tf!("damagedPdf", name));
                     }
                 }
                 store.add(&paths).map_err(|e| e.to_string())?;
                 Ok(())
             };
             match check() {
-                Ok(()) => Msg::Done(format!("Se añadieron {} PDFs al final de la lista.", paths.len())),
+                Ok(()) => Msg::Done(tf!("added", paths.len())),
                 Err(e) => Msg::Error(e),
             }
         });
@@ -234,7 +273,7 @@ impl App {
 
     fn single_selected(&self) -> Result<i64, String> {
         if self.selected.len() != 1 {
-            return Err("Selecciona un solo documento.".into());
+            return Err(t("selectOne").into());
         }
         Ok(*self.selected.iter().next().unwrap())
     }
@@ -242,7 +281,7 @@ impl App {
     fn move_selected(&mut self, delta: i64) {
         let r = self.single_selected().and_then(|id| self.store.move_item(id, delta).map_err(|e| e.to_string()));
         if let Err(e) = r {
-            info("No se pudo mover", &e, MessageLevel::Error);
+            info(t("moveFailed"), &engine(&e), MessageLevel::Error);
         }
         self.refresh();
     }
@@ -252,18 +291,11 @@ impl App {
             return;
         }
         let ids: Vec<i64> = self.selected.iter().copied().collect();
-        if !ask(
-            "Eliminar PDF del lote",
-            &format!(
-                "¿Eliminar {} PDF(s) seleccionados de la lista y sus copias locales?\n\nLos archivos originales \
-                 y el historial se conservan. No se pueden eliminar interrupciones sin resolver.",
-                ids.len()
-            ),
-        ) {
+        if !ask(t("removeTitle"), &tf!("removeText", ids.len())) {
             return;
         }
-        self.spawn(ctx, "Eliminando PDFs del lote…", move |store, _| match store.delete_items(&ids) {
-            Ok(n) => Msg::Done(format!("{n} PDF(s) eliminados del lote. Originales conservados.")),
+        self.spawn(ctx, t("removing"), move |store, _| match store.delete_items(&ids) {
+            Ok(n) => Msg::Done(tf!("removed", n)),
             Err(e) => Msg::Error(e.to_string()),
         });
     }
@@ -273,45 +305,30 @@ impl App {
         if self.items.is_empty() {
             return;
         }
-        if !ask(
-            "Vaciar carpeta del lote",
-            "¿Vaciar la lista y eliminar sus copias locales de PDF?\n\nNO se borrará la carpeta de origen ni sus \
-             archivos. El historial se conserva. Resuelve primero cualquier interrupción.",
-        ) {
+        if !ask(t("clearTitle"), t("clearText")) {
             return;
         }
-        self.batch_count = "Lote: sin iniciar".into();
-        self.progress = (0, 1);
-        self.spawn(ctx, "Vaciando la carpeta del lote…", |store, _| match store.clear_items() {
-            Ok(n) => Msg::Done(format!("Carpeta del lote vaciada: {n} PDF(s). Originales conservados.")),
+        self.batch = None;
+        self.spawn(ctx, t("clearing"), |store, _| match store.clear_items() {
+            Ok(n) => Msg::Done(tf!("cleared", n)),
             Err(e) => Msg::Error(e.to_string()),
         });
     }
 
     fn start(&mut self, ctx: &egui::Context) {
         if self.printer.is_empty() {
-            return info("Sin impresora", "Selecciona una impresora.", MessageLevel::Error);
+            return info(t("noPrinterTitle"), t("noPrinterText"), MessageLevel::Error);
         }
         if !matches!(self.store.pending(), Ok(Some(_))) {
-            return info(
-                "Sin pendientes disponibles",
-                "El lote terminó o hay una interrupción que debes resolver antes de continuar.",
-                MessageLevel::Info,
-            );
+            return info(t("noPendingTitle"), t("noPendingText"), MessageLevel::Info);
         }
         let choice = self.batch_size.trim();
-        let limit = if choice.eq_ignore_ascii_case("todos") {
+        let limit = if i18n::is_all(choice) {
             None
         } else {
             match choice.parse::<usize>() {
                 Ok(n) if n > 0 && choice.bytes().all(|b| b.is_ascii_digit()) => Some(n),
-                _ => {
-                    return info(
-                        "Cantidad no válida",
-                        "Escribe una cantidad entera mayor que cero (por ejemplo, 35) o selecciona Todos.",
-                        MessageLevel::Error,
-                    )
-                }
+                _ => return info(t("badCountTitle"), t("badCountText"), MessageLevel::Error),
             }
         };
         let available = self
@@ -321,22 +338,13 @@ impl App {
             .take_while(|i| i.state == "pending")
             .count();
         let target = limit.map_or(available, |l| l.min(available));
-        if !ask(
-            "Confirmar impresión",
-            &format!(
-                "¿Imprimir los próximos {target} PDFs en «{}»?\n\nUna copia por documento, ajustada al área \
-                 imprimible. Papel, bandeja, color y dúplex: valores predeterminados del controlador.\n\nRevisa los \
-                 ajustes y el orden antes de aceptar. No envíes el mismo lote desde otra aplicación.",
-                self.printer
-            ),
-        ) {
+        if !ask(t("confirmPrintTitle"), &tf!("confirmPrintText", target, self.printer)) {
             return;
         }
         self.pause.store(false, Ordering::SeqCst);
-        self.batch_count = format!("Lote: 0 / {target} PDFs finalizados según Windows");
-        self.progress = (0, target.max(1));
+        self.batch = Some((0, target));
         let (printer, pause, ctx2) = (self.printer.clone(), self.pause.clone(), ctx.clone());
-        self.spawn(ctx, "Iniciando lote…", move |store, tx| {
+        self.spawn(ctx, t("starting"), move |store, tx| {
             let (etx, erx) = channel::<BatchEvent>();
             let fwd = {
                 let (tx, ctx) = (tx.clone(), ctx2.clone());
@@ -352,12 +360,8 @@ impl App {
             drop(etx);
             let _ = fwd.join();
             match out {
-                BatchOutcome::Finished { completed, target } => Msg::Done(format!(
-                    "Lote terminado: {completed} / {target} PDFs finalizados según Windows. Pulsa Iniciar / continuar para el siguiente lote."
-                )),
-                BatchOutcome::Paused { completed, target } => Msg::Done(format!(
-                    "Lote pausado: {completed} / {target} PDFs finalizados según Windows. Pulsa Iniciar / continuar para el siguiente lote."
-                )),
+                BatchOutcome::Finished { completed, target } => Msg::Done(tf!("batchFinished", completed, target)),
+                BatchOutcome::Paused { completed, target } => Msg::Done(tf!("batchPaused", completed, target)),
                 BatchOutcome::Error(e) => Msg::Error(e),
             }
         });
@@ -365,13 +369,13 @@ impl App {
 
     fn request_pause(&mut self) {
         self.pause.store(true, Ordering::SeqCst);
-        self.status = "Pausa solicitada. Se terminará el PDF actual antes de detener el lote.".into();
+        self.status = t("pauseRequested").into();
     }
 
     fn export(&mut self) {
         let Some(path) = rfd::FileDialog::new()
-            .set_title("Exportar registro")
-            .set_file_name("informe-pdf-batch.json")
+            .set_title(t("exportTitle"))
+            .set_file_name(t("exportFileName"))
             .add_filter("JSON", &["json"])
             .save_file()
         else {
@@ -381,8 +385,8 @@ impl App {
             .map_err(|e| e.to_string())
             .and_then(|s| std::fs::write(&path, s).map_err(|e| e.to_string()));
         match r {
-            Ok(()) => self.status = format!("Informe exportado: {}", path.display()),
-            Err(e) => info("Exportar", &e, MessageLevel::Error),
+            Ok(()) => self.status = tf!("exported", path.display()),
+            Err(e) => info(t("exportTitle"), &e, MessageLevel::Error),
         }
     }
 
@@ -395,16 +399,16 @@ impl App {
     fn open_recovery(&mut self, ctx: &egui::Context, id: i64) {
         let Some(item) = self.items.iter().find(|i| i.id == id).cloned() else { return };
         if item.state != "uncertain" {
-            return info("Seleccionar interrupción", "Este documento no tiene una interrupción pendiente de resolver.", MessageLevel::Error);
+            return info(t("selectInterruption"), t("notInterrupted"), MessageLevel::Error);
         }
-        let mut caption = "No hay una última página registrada para mostrar.\nRevisa físicamente el papel y la cola de Windows.".to_string();
+        let mut caption = t("noLastPage").to_string();
         let mut texture = None;
         if let Some((ref_item, page)) = recovery_reference(&self.items, id) {
             let render = || -> Result<printing::Raster, String> {
                 let doc = Document::open(printing::pdfium().map_err(|e| e.to_string())?, Path::new(&ref_item.snapshot))
                     .map_err(|e| e.to_string())?;
                 if page as u32 > doc.page_count() {
-                    return Err("La página está fuera de la copia".into());
+                    return Err(t("pageOutsideCopy").into());
                 }
                 doc.render_fit(page as u32 - 1, (460, 480))
             };
@@ -417,12 +421,9 @@ impl App {
                     }
                     let img = egui::ColorImage::from_rgba_unmultiplied([r.width as usize, r.height as usize], &rgba);
                     texture = Some(ctx.load_texture("recovery", img, Default::default()));
-                    caption = format!(
-                        "{} · Página {page}\nReferencia enviada al controlador; NO confirma salida física.",
-                        ref_item.name
-                    );
+                    caption = tf!("recoveryCaption", ref_item.name, page);
                 }
-                Err(e) => caption = format!("No se pudo abrir la vista previa: {e}"),
+                Err(e) => caption = tf!("previewFailed", e),
             }
         }
         self.recovery = Some(Recovery { item, page_text: "1".into(), caption, texture });
@@ -432,7 +433,8 @@ impl App {
         let Some(rec) = self.recovery.as_mut() else { return };
         let mut open = true;
         let mut action: Option<(Resolution, bool)> = None;
-        egui::Window::new("Revisar interrupción · elegir dónde continuar")
+        egui::Window::new(t("recoveryTitle"))
+            .id(egui::Id::new("recovery"))
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
@@ -441,67 +443,59 @@ impl App {
             .show(ctx, |ui| {
                 ui.columns(2, |cols| {
                     let ui = &mut cols[0];
-                    ui.label(RichText::new("Última página esperada").size(18.0).strong());
+                    ui.label(RichText::new(t("expectedPage")).size(18.0).strong());
                     ui.label(&rec.caption);
-                    if let Some(t) = &rec.texture {
-                        ui.add(egui::Image::new(t).max_size(egui::vec2(460.0, 480.0)));
+                    if let Some(tex) = &rec.texture {
+                        ui.add(egui::Image::new(tex).max_size(egui::vec2(460.0, 480.0)));
                     }
-                    ui.colored_label(
-                        WARN,
-                        "Compara esta página con la última hoja de papel que salió.\nSi imprimes a doble cara, comprueba ambos lados.",
-                    );
+                    ui.colored_label(WARN, t("compareHint"));
 
                     let ui = &mut cols[1];
                     let it = &rec.item;
                     ui.label(RichText::new(&it.name).size(16.0).strong());
-                    ui.label(format!(
-                        "Impresora: {}\nTrabajo Windows: {}\nPágina registrada: {} / {}\n\nCompara el preview con el \
-                         papel. Antes de reintentar, espera o cancela el trabajo anterior en Windows: podría seguir \
-                         imprimiéndose.",
-                        it.printer.as_deref().unwrap_or("sin registrar"),
-                        it.job_id.as_deref().unwrap_or("no registrado"),
+                    ui.label(tf!(
+                        "recoveryDetails",
+                        it.printer.as_deref().unwrap_or(t("notRecorded")),
+                        it.job_id.as_deref().unwrap_or(t("notRecorded")),
                         it.last_page,
-                        it.total_pages.map_or("?".to_string(), |t| t.to_string()),
+                        it.total_pages.map_or("?".to_string(), |n| n.to_string()),
                     ));
                     if let Some(e) = &it.error {
-                        ui.colored_label(DANGER, e);
+                        ui.colored_label(DANGER, engine(e));
                     }
                     ui.horizontal(|ui| {
-                        ui.label("Primera página que falta:");
+                        ui.label(t("firstMissing"));
                         ui.add(egui::TextEdit::singleline(&mut rec.page_text).desired_width(60.0));
                     });
                     let w = ui.available_width();
                     let b = |ui: &mut egui::Ui, text: &str| ui.add_sized([w, 30.0], egui::Button::new(text)).clicked();
-                    if b(ui, "Reanudar desde este PDF (página 1)") {
+                    if b(ui, t("resumeFirst")) {
                         action = Some((Resolution::Retry, true));
                     }
-                    if b(ui, "Reanudar desde la página indicada") {
+                    if b(ui, t("resumeFrom")) {
                         action = Some((Resolution::Retry, false));
                     }
-                    if b(ui, "Continuar con el siguiente PDF (este salió completo)") {
+                    if b(ui, t("continueNext")) {
                         action = Some((Resolution::Sent, false));
                     }
-                    if b(ui, "Omitir este PDF sin confirmar impresión") {
+                    if b(ui, t("skipPdf")) {
                         action = Some((Resolution::Skip, false));
                     }
-                    ui.colored_label(MUTED, "Después pulsa Iniciar / continuar. Cerrar esta ventana conserva el bloqueo.");
+                    ui.colored_label(MUTED, t("afterResolve"));
                 });
             });
         if let Some((res, from_first)) = action {
             let first = if res == Resolution::Retry && !from_first { rec.page_text.trim().parse::<i64>().unwrap_or(0) } else { 1 };
             let (id, total) = (rec.item.id, rec.item.total_pages);
-            if first < 1 || total.map_or(false, |t| first > t) {
-                info("No se pudo resolver", "Página fuera del documento.", MessageLevel::Error);
-            } else if ask(
-                "Confirmar revisión manual",
-                "¿Confirmas que revisaste las hojas y la cola de Windows?\nEl programa no cancela trabajos anteriores automáticamente.",
-            ) {
+            if first < 1 || total.map_or(false, |n| first > n) {
+                info(t("resolveFailed"), t("pageOutsideDoc"), MessageLevel::Error);
+            } else if ask(t("confirmReviewTitle"), t("confirmReviewText")) {
                 match self.store.resolve(id, res, first) {
                     Ok(()) => {
                         self.recovery = None;
                         self.refresh();
                     }
-                    Err(e) => info("No se pudo resolver", &e.to_string(), MessageLevel::Error),
+                    Err(e) => info(t("resolveFailed"), &engine(&e.to_string()), MessageLevel::Error),
                 }
             }
         }
@@ -526,27 +520,21 @@ impl App {
     fn poll(&mut self, ctx: &egui::Context) {
         while let Ok(msg) = self.rx.try_recv() {
             match msg {
-                Msg::Batch(BatchEvent::Status(s)) => self.status = s,
+                Msg::Batch(BatchEvent::Status(s)) => self.status = engine(&s),
                 Msg::Batch(BatchEvent::Refresh) => self.refresh(),
-                Msg::Batch(BatchEvent::Batch(done, target)) => {
-                    self.batch_count = format!("Lote: {done} / {target} PDFs finalizados según Windows");
-                    self.progress = (done, target.max(1));
-                }
+                Msg::Batch(BatchEvent::Batch(done, target)) => self.batch = Some((done, target)),
                 Msg::Done(s) => {
                     self.busy = false;
                     self.status = s;
                     self.refresh();
                 }
                 Msg::Error(s) => {
+                    let s = engine(&s);
                     self.busy = false;
                     self.status = s.clone();
                     self.refresh();
                     if !self.show_interruption(ctx) {
-                        info(
-                            "Proceso detenido de forma segura",
-                            &format!("{s}\n\nNo se reintentará automáticamente."),
-                            MessageLevel::Error,
-                        );
+                        info(t("stoppedTitle"), &tf!("stoppedText", s), MessageLevel::Error);
                     }
                 }
             }
@@ -564,21 +552,29 @@ impl eframe::App for App {
         if ctx.input(|i| i.viewport().close_requested()) && self.busy {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             self.request_pause();
-            info(
-                "Pausa solicitada",
-                "Espera a que termine el documento o la operación actual. Luego podrás cerrar. Si Windows fuerza un \
-                 cierre, el documento activo quedará por revisar al volver a abrir.",
-                MessageLevel::Info,
-            );
+            info(t("pauseTitle"), t("closeBusyText"), MessageLevel::Info);
         }
         let idle = !self.busy && self.recovery.is_none();
 
         egui::TopBottomPanel::top("header").frame(egui::Frame::none().inner_margin(16.0).fill(ctx.style().visuals.panel_fill)).show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(RichText::new("PDF-batch").size(26.0).strong().color(NAVY));
-                ui.label(RichText::new(format!("v{}  /  Impresión ordenada", crate::VERSION)).color(MUTED));
+                ui.label(RichText::new(tf!("subtitle", crate::VERSION)).color(MUTED));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.link("Creado por siriusgoldsmith · GitHub").clicked() {
+                    let mut lang = i18n::current();
+                    egui::ComboBox::from_id_salt("language")
+                        .selected_text(i18n::LANGUAGES[lang].1)
+                        .show_ui(ui, |ui| {
+                            for (i, (_, name)) in i18n::LANGUAGES.iter().enumerate() {
+                                // Japanese needs the CJK fallback font to show its own name.
+                                let name = if i18n::LANGUAGES[i].0 == "ja" && !self.cjk_font { "Japanese" } else { name };
+                                ui.selectable_value(&mut lang, i, name);
+                            }
+                        });
+                    ui.label(RichText::new(t("language")).color(MUTED));
+                    self.set_language(ctx, lang);
+                    ui.add_space(12.0);
+                    if ui.link(t("createdBy")).clicked() {
                         Self::open_shell("https://github.com/siriusgoldsmith/PDF-batch");
                     }
                 });
@@ -586,23 +582,23 @@ impl eframe::App for App {
             ui.add_space(8.0);
             ui.add_enabled_ui(idle, |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button("Añadir PDFs").clicked() {
+                    if ui.button(t("addPdfs")).clicked() {
                         self.add_files(ctx);
                     }
-                    if ui.button("Añadir carpeta").clicked() {
+                    if ui.button(t("addFolder")).clicked() {
                         self.add_folder(ctx);
                     }
-                    if ui.button("Subir").clicked() {
+                    if ui.button(t("moveUp")).clicked() {
                         self.move_selected(-1);
                     }
-                    if ui.button("Bajar").clicked() {
+                    if ui.button(t("moveDown")).clicked() {
                         self.move_selected(1);
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(RichText::new("Vaciar carpeta del lote").color(DANGER)).clicked() {
+                        if ui.button(RichText::new(t("clearFolder")).color(DANGER)).clicked() {
                             self.clear_folder(ctx);
                         }
-                        if ui.button("Eliminar PDF").clicked() {
+                        if ui.button(t("removePdf")).clicked() {
                             self.remove(ctx);
                         }
                     });
@@ -612,7 +608,7 @@ impl eframe::App for App {
             ui.horizontal(|ui| {
                 ui.label(RichText::new(self.summary()).strong());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.colored_label(MUTED, "Orden de impresión: de arriba hacia abajo");
+                    ui.colored_label(MUTED, t("printOrder"));
                 });
             });
         });
@@ -624,75 +620,75 @@ impl eframe::App for App {
                 .next()
                 .and_then(|id| self.items.iter().find(|i| i.id == *id))
                 .map(|r| match &r.error {
-                    Some(e) => format!("{} | {e}", r.source),
+                    Some(e) => format!("{} | {}", r.source, engine(e)),
                     None => r.source.clone(),
                 })
-                .unwrap_or_else(|| "Añade PDFs y revisa el orden. Los originales se conservan.".into());
+                .unwrap_or_else(|| t("footerHint").into());
             ui.colored_label(MUTED, details);
             ui.add_space(6.0);
             egui::Frame::group(ui.style()).inner_margin(12.0).show(ui, |ui| {
-                ui.label(RichText::new("Impresión").strong());
+                ui.label(RichText::new(t("printing")).strong());
                 ui.add_enabled_ui(idle, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label("Impresora");
+                        ui.label(t("printer"));
                         egui::ComboBox::from_id_salt("printer")
-                            .width(ui.available_width() - 260.0)
+                            .width(ui.available_width() - 300.0)
                             .selected_text(&self.printer)
                             .show_ui(ui, |ui| {
                                 for p in self.printers.clone() {
                                     ui.selectable_value(&mut self.printer, p.clone(), p);
                                 }
                             });
-                        if ui.button("Actualizar").clicked() {
+                        if ui.button(t("refresh")).clicked() {
                             self.refresh_printers();
                         }
-                        if ui.button("Ajustes Windows").clicked() {
+                        if ui.button(t("windowsSettings")).clicked() {
                             Self::open_shell("ms-settings:printers");
                         }
                     });
                 });
                 ui.horizontal(|ui| {
-                    ui.label("PDFs por lote");
+                    ui.label(t("perBatch"));
                     ui.add_enabled_ui(idle, |ui| {
                         ui.add(egui::TextEdit::singleline(&mut self.batch_size).desired_width(70.0));
-                        for v in ["20", "50", "100", "Todos"] {
+                        for v in ["20", "50", "100", t("all")] {
                             if ui.small_button(v).clicked() {
                                 self.batch_size = v.into();
                             }
                         }
                     });
-                    ui.colored_label(MUTED, "Escribe una cantidad o elige Todos");
+                    ui.colored_label(MUTED, t("countHint"));
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let start = egui::Button::new(RichText::new("Iniciar / continuar").strong().color(Color32::WHITE)).fill(NAVY);
+                        let start = egui::Button::new(RichText::new(t("start")).strong().color(Color32::WHITE)).fill(NAVY);
                         if ui.add_enabled(idle, start).clicked() {
                             self.start(ctx);
                         }
                         let pausing = self.pause.load(Ordering::SeqCst);
-                        if ui.add_enabled(self.busy && !pausing, egui::Button::new("Pausar tras documento")).clicked() {
+                        if ui.add_enabled(self.busy && !pausing, egui::Button::new(t("pauseAfter"))).clicked() {
                             self.request_pause();
                         }
                     });
                 });
                 ui.horizontal(|ui| {
-                    ui.label(&self.batch_count);
-                    let (d, t) = self.progress;
-                    ui.add(egui::ProgressBar::new(d as f32 / t as f32));
+                    ui.label(self.batch_label());
+                    let (d, n) = self.batch.unwrap_or((0, 1));
+                    ui.add(egui::ProgressBar::new(d as f32 / n.max(1) as f32));
                 });
             });
             ui.add_space(6.0);
             ui.horizontal(|ui| {
-                if ui.add_enabled(idle, egui::Button::new("Resolver interrupción")).clicked() {
+                if ui.add_enabled(idle, egui::Button::new(t("resolve"))).clicked() {
                     match self.single_selected() {
                         Ok(id) => self.open_recovery(ctx, id),
-                        Err(e) => info("Seleccionar interrupción", &e, MessageLevel::Error),
+                        Err(e) => info(t("selectInterruption"), &e, MessageLevel::Error),
                     }
                 }
-                ui.colored_label(MUTED, "Solo si hay un error o corte");
+                ui.colored_label(MUTED, t("resolveHint"));
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui.button("Exportar informe").clicked() {
+                    if ui.button(t("exportReport")).clicked() {
                         self.export();
                     }
-                    if ui.button("Abrir registro local").clicked() {
+                    if ui.button(t("openLog")).clicked() {
                         Self::open_shell(&self.data_dir.to_string_lossy());
                     }
                 });
@@ -711,15 +707,15 @@ impl eframe::App for App {
             TableBuilder::new(ui)
                 .striped(false)
                 .sense(egui::Sense::click())
-                .column(Column::exact(55.0))
+                .column(Column::exact(90.0))
                 .column(Column::remainder().at_least(200.0).clip(true))
-                .column(Column::exact(160.0))
-                .column(Column::exact(200.0))
-                .column(Column::exact(110.0))
+                .column(Column::exact(170.0))
+                .column(Column::exact(210.0))
+                .column(Column::exact(130.0))
                 .header(30.0, |mut h| {
-                    for t in ["Orden", "Documento", "Estado", "Resultado Windows", "Pág. enviadas"] {
+                    for key in ["col.order", "col.document", "col.state", "col.outcome", "col.pages"] {
                         h.col(|ui| {
-                            ui.strong(t);
+                            ui.strong(t(key));
                         });
                     }
                 })
@@ -739,7 +735,7 @@ impl eframe::App for App {
                                 ui.label(text);
                             }
                         };
-                        let total = it.total_pages.map_or("?".into(), |t| t.to_string());
+                        let total = it.total_pages.map_or("?".into(), |n| n.to_string());
                         let cols = [
                             it.position.to_string(),
                             it.name.clone(),
