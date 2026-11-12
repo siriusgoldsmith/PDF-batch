@@ -1,9 +1,9 @@
-PDF-batch v2.0.0-alpha.1 — Windows 10/11 de 64 bits
-====================================================
+PDF-batch v2.0.0 — Windows 10/11 de 64 bits
+===========================================
 Creado por siriusgoldsmith — https://github.com/siriusgoldsmith/PDF-batch
 Antes llamado PDF Lote (PDFLote).
 
-NOVEDADES v2.0 (ALFA)
+NOVEDADES v2.0
 - Reescrito en Rust. Un solo archivo, pdf-batch.exe (unos 15 MB): sin Python,
   sin carpeta runtime/ ni DLLs de Visual C++ al lado. Arranque inmediato.
 - Motor PDF: PDFium (el de Chrome), incluido dentro del ejecutable. La primera
@@ -17,8 +17,8 @@ NOVEDADES v2.0 (ALFA)
   %LOCALAPPDATA%\PDFLote se mueve a %LOCALAPPDATA%\PDF-batch con su cola,
   copias e historial. Cierra PDF Lote v1.x antes; si está abierto, se avisa.
 - Misma cola, estados, recuperación con vista previa y textos que la v1.4.
-- ALFA: la impresión con impresora real aún no está validada. Prueba primero
-  con 2 o 3 PDFs y conserva la v1.4 a mano.
+- Validado con impresora real. Aun así, prueba primero con 2 o 3 PDFs en tu
+  equipo.
 
 USO
 1. Cierra la versión anterior y abre pdf-batch.exe. No necesitas instalar nada,
