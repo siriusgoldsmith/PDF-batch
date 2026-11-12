@@ -35,7 +35,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory dist | Out-Null
-          Copy-Item target/release/pdf-batch.exe, README.md, LEEME.txt, COPYING, THIRD_PARTY.txt, PRIVACY.md dist/
+          Copy-Item target/release/pdf-batch.exe, README.md, README.es.md, README.txt, LEEME.txt, COPYING, THIRD_PARTY.txt, PRIVACY.md dist/
           Copy-Item licenses dist/licenses -Recurse
           Get-FileHash dist/pdf-batch.exe -Algorithm SHA256 | Format-List | Out-File dist/SHA256.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

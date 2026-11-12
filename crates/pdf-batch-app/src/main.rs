@@ -2,6 +2,7 @@
 //! PDF-batch: ordered, durable, conservative Windows printing. Port of `app.py`.
 
 mod app;
+mod i18n;
 
 use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
@@ -25,7 +26,7 @@ fn lock(path: &Path) -> Result<File, String> {
         o.share_mode(0);
     }
     o.open(path).map_err(|e| match e.raw_os_error() {
-        Some(32) | Some(33) => "Este lote ya está abierto en otra ventana o sesión de Windows.".to_string(),
+        Some(32) | Some(33) => i18n::t("alreadyOpen").to_string(),
         _ => e.to_string(),
     })
 }
@@ -44,7 +45,7 @@ fn migrate(base: &Path) -> Result<(PathBuf, Option<PathBuf>), String> {
     }
     // Holding v1.x's own lock proves PDFLote is not running right now.
     let guard = lock(&old.join("queue.lock"))
-        .map_err(|_| "PDFLote v1.x está abierto. Ciérralo para que PDF-batch pueda migrar la cola.".to_string())?;
+        .map_err(|_| i18n::t("v1Open").to_string())?;
     let canon = old.canonicalize().map_err(|e| e.to_string())?;
     let canon = PathBuf::from(canon.to_string_lossy().trim_start_matches(r"\\?\"));
     drop(guard);
@@ -59,6 +60,7 @@ static PDFIUM_DLL: &[u8] = include_bytes!(env!("PDFIUM_EMBED"));
 
 fn start() -> Result<(), String> {
     let (data_dir, moved_from) = migrate(&local_app_data())?;
+    i18n::init(&data_dir);
     pdf_batch_print::set_embedded_pdfium(PDFIUM_DLL, data_dir.join("runtime"));
     let _lifetime = lock(&data_dir.join("queue.lock"))?;
     let store = QueueStore::open(data_dir.join("queue.sqlite3")).map_err(|e| e.to_string())?;
@@ -91,10 +93,12 @@ fn start() -> Result<(), String> {
 use eframe::egui;
 
 fn main() {
+    // Startup errors can happen before the data folder (and the saved choice) is known.
+    i18n::init_from_windows();
     if let Err(e) = start() {
         rfd::MessageDialog::new()
             .set_level(rfd::MessageLevel::Warning)
-            .set_title("PDF-batch no pudo iniciar")
+            .set_title(i18n::t("startFailed"))
             .set_description(e)
             .show();
     }
