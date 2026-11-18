@@ -232,44 +232,104 @@ impl App {
         let Some(folder) = rfd::FileDialog::new().set_title(t("dlgAddFolder")).pick_folder() else {
             return;
         };
-        let mut paths: Vec<PathBuf> = std::fs::read_dir(&folder)
-            .map(|rd| {
-                rd.filter_map(|e| e.ok().map(|e| e.path()))
-                    .filter(|p| p.is_file() && p.extension().map_or(false, |e| e.eq_ignore_ascii_case("pdf")))
-                    .collect()
-            })
-            .unwrap_or_default();
-        paths.sort_by_key(|p| p.file_name().map(|n| n.to_string_lossy().to_lowercase()));
-        if paths.is_empty() {
-            info(t("emptyFolderTitle"), t("emptyFolderText"), MessageLevel::Info);
-        } else {
-            self.add_paths(ctx, paths);
-        }
-    }
-
-    fn add_paths(&mut self, ctx: &egui::Context, paths: Vec<PathBuf>) {
-        self.spawn(ctx, t("validating"), move |store, _| {
-            let check = || -> Result<(), String> {
-                let pdfium = printing::pdfium().map_err(|e| e.to_string())?;
-                for p in &paths {
-                    let name = p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                    let doc = Document::open(pdfium, p).map_err(|_| tf!("invalidPdf", name))?;
-                    if doc.page_count() < 1 {
-                        return Err(tf!("emptyPdf", name));
-                    }
-                    if !(0..doc.page_count()).all(|i| doc.page_ok(i)) {
-                        return Err(tf!("damagedPdf", name));
-                    }
-                }
-                store.add(&paths).map_err(|e| e.to_string())?;
-                Ok(())
-            };
-            match check() {
-                Ok(()) => Msg::Done(tf!("added", paths.len())),
-                Err(e) => Msg::Error(e),
+        // Walking a large tree (or a slow network drive) happens off the UI thread.
+        let data_dir = self.data_dir.clone();
+        self.spawn(ctx, t("scanning"), move |store, _| {
+            let mut paths = Vec::new();
+            collect_pdfs(&folder, &data_dir, &mut paths);
+            if paths.is_empty() {
+                Msg::Done(t("emptyFolderText").into())
+            } else {
+                add_job(&store, paths)
             }
         });
     }
+
+    fn add_paths(&mut self, ctx: &egui::Context, paths: Vec<PathBuf>) {
+        self.spawn(ctx, t("validating"), move |store, _| add_job(&store, paths));
+    }
+}
+
+/// PDFs in `dir` and all its subfolders, in a stable reading order: the folder's
+/// own PDFs by name, then each subfolder by name. Shortcuts/junctions are not
+/// followed (no loops) and the app's own data folder is skipped. Unreadable
+/// folders are skipped.
+fn collect_pdfs(dir: &Path, skip: &Path, out: &mut Vec<PathBuf>) {
+    if dir.starts_with(skip) {
+        return;
+    }
+    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let mut files = Vec::new();
+    let mut dirs = Vec::new();
+    for e in rd.flatten() {
+        let Ok(ft) = e.file_type() else { continue };
+        let p = e.path();
+        if ft.is_symlink() {
+            continue;
+        } else if ft.is_dir() {
+            dirs.push(p);
+        } else if ft.is_file() && p.extension().map_or(false, |x| x.eq_ignore_ascii_case("pdf")) {
+            files.push(p);
+        }
+    }
+    let key = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase());
+    files.sort_by_key(key);
+    dirs.sort_by_key(key);
+    out.extend(files);
+    for d in dirs {
+        collect_pdfs(&d, skip, out);
+    }
+}
+
+/// Validate every PDF, then add them all to the queue (all or nothing).
+fn add_job(store: &QueueStore, paths: Vec<PathBuf>) -> Msg {
+    let check = || -> Result<(), String> {
+        let pdfium = printing::pdfium().map_err(|e| e.to_string())?;
+        for p in &paths {
+            // Full path: with subfolders, the same file name can appear twice.
+            let name = p.display();
+            let doc = Document::open(pdfium, p).map_err(|_| tf!("invalidPdf", name))?;
+            if doc.page_count() < 1 {
+                return Err(tf!("emptyPdf", name));
+            }
+            if !(0..doc.page_count()).all(|i| doc.page_ok(i)) {
+                return Err(tf!("damagedPdf", name));
+            }
+        }
+        store.add(&paths).map_err(|e| e.to_string())?;
+        Ok(())
+    };
+    match check() {
+        Ok(()) => Msg::Done(tf!("added", paths.len())),
+        Err(e) => Msg::Error(e),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::collect_pdfs;
+
+    #[test]
+    fn folder_scan_includes_subfolders_in_order() {
+        let root = std::env::temp_dir().join(format!("pdf-batch-scan-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let data = root.join("data");
+        for d in ["b", "a/z", "data"] {
+            std::fs::create_dir_all(root.join(d)).unwrap();
+        }
+        for f in ["2.pdf", "1.PDF", "nota.txt", "a/x.pdf", "a/z/y.pdf", "b/w.pdf", "data/copia.pdf"] {
+            std::fs::write(root.join(f), b"%PDF").unwrap();
+        }
+        let mut out = Vec::new();
+        collect_pdfs(&root, &data, &mut out);
+        let rel: Vec<String> =
+            out.iter().map(|p| p.strip_prefix(&root).unwrap().to_string_lossy().replace('\\', "/")).collect();
+        assert_eq!(rel, ["1.PDF", "2.pdf", "a/x.pdf", "a/z/y.pdf", "b/w.pdf"]);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+}
+
+impl App {
 
     fn single_selected(&self) -> Result<i64, String> {
         if self.selected.len() != 1 {

@@ -25,8 +25,9 @@ USO
 1. Cierra la versión anterior y abre pdf-batch.exe. No necesitas instalar nada,
    ni Adobe Reader ni Internet para imprimir. No borres %LOCALAPPDATA%\PDF-batch
    (o PDFLote si aún no migraste): ahí se conserva tu lote.
-2. Añade PDFs. Se agregan al final en el orden visible. Añadir carpeta ordena
-   por nombre, sin subcarpetas. Windows puede entregar una selección múltiple
+2. Añade PDFs. Se agregan al final en el orden visible. Añadir carpeta incluye
+   las subcarpetas: primero los PDFs de la carpeta por nombre, luego cada
+   subcarpeta por nombre. Se ignoran accesos directos y enlaces. Windows puede entregar una selección múltiple
    ordenada por nombre y no por los clics. Revisa el orden; usa Subir/Bajar
    sobre documentos pendientes o añádelos uno por uno si necesitas otro orden.
    Ctrl+clic selecciona varios documentos.
