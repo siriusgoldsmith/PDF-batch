@@ -25,8 +25,9 @@ USE
    Adobe Reader and no Internet needed to print. Do not delete
    %LOCALAPPDATA%\PDF-batch (or PDFLote if not migrated yet): your batch is kept
    there.
-2. Add PDFs. They are appended in the visible order. Add folder sorts by name,
-   without subfolders. Windows may return a multiple selection sorted by name
+2. Add PDFs. They are appended in the visible order. Add folder includes
+   subfolders: first the folder's own PDFs by name, then each subfolder by name.
+   Shortcuts and links are skipped. Windows may return a multiple selection sorted by name
    rather than by click order. Check the order; use Move up/Move down on
    pending documents, or add them one by one if you need another order.
    Ctrl+click selects several documents.
