@@ -1,4 +1,4 @@
-PDF-batch v2.1.0 — Windows 10/11 64-bit
+PDF-batch v2.2.0 — Windows 10/11 64-bit
 =======================================
 Created by siriusgoldsmith — https://github.com/siriusgoldsmith/PDF-batch
 Formerly PDF Lote (PDFLote). Spanish version: LEEME.txt
