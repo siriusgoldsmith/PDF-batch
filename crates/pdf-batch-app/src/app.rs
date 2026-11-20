@@ -223,7 +223,9 @@ impl App {
     // ------------------------------------------------------------ actions
 
     fn add_files(&mut self, ctx: &egui::Context) {
-        if let Some(paths) = rfd::FileDialog::new().set_title(t("dlgAddFiles")).add_filter("PDF", &["pdf", "PDF"]).pick_files() {
+        if let Some(mut paths) = rfd::FileDialog::new().set_title(t("dlgAddFiles")).add_filter("PDF", &["pdf", "PDF"]).pick_files() {
+            // The dialog does not keep click order; use a predictable one.
+            sort_natural(&mut paths);
             self.add_paths(ctx, paths);
         }
     }
@@ -272,13 +274,57 @@ fn collect_pdfs(dir: &Path, skip: &Path, out: &mut Vec<PathBuf>) {
             files.push(p);
         }
     }
-    let key = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().to_lowercase());
-    files.sort_by_key(key);
-    dirs.sort_by_key(key);
+    sort_natural(&mut files);
+    sort_natural(&mut dirs);
     out.extend(files);
     for d in dirs {
         collect_pdfs(&d, skip, out);
     }
+}
+
+/// Compare names the way Windows Explorer does: numbers by value, so
+/// "2-x.pdf" < "10-x.pdf" < "100-x.pdf"; letters ignore case.
+fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    let (mut a, mut b) = (a.chars().peekable(), b.chars().peekable());
+    loop {
+        match (a.peek().copied(), b.peek().copied()) {
+            (None, None) => return Ordering::Equal,
+            (None, _) => return Ordering::Less,
+            (_, None) => return Ordering::Greater,
+            (Some(x), Some(y)) if x.is_ascii_digit() && y.is_ascii_digit() => {
+                let take = |it: &mut std::iter::Peekable<std::str::Chars>| {
+                    let mut s = String::new();
+                    while let Some(c) = it.peek().copied().filter(char::is_ascii_digit) {
+                        s.push(c);
+                        it.next();
+                    }
+                    s
+                };
+                let (na, nb) = (take(&mut a), take(&mut b));
+                let (ta, tb) = (na.trim_start_matches('0'), nb.trim_start_matches('0'));
+                // Longer number is bigger; same length compares digit by digit;
+                // equal values: fewer leading zeros first ("1" < "01").
+                let ord = ta.len().cmp(&tb.len()).then_with(|| ta.cmp(tb)).then_with(|| na.len().cmp(&nb.len()));
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+            }
+            (Some(x), Some(y)) => {
+                let ord = x.to_lowercase().cmp(y.to_lowercase());
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+                a.next();
+                b.next();
+            }
+        }
+    }
+}
+
+fn sort_natural(paths: &mut [PathBuf]) {
+    let name = |p: &PathBuf| p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    paths.sort_by(|a, b| natural_cmp(&name(a), &name(b)));
 }
 
 /// Validate every PDF, then add them all to the queue (all or nothing).
@@ -307,7 +353,37 @@ fn add_job(store: &QueueStore, paths: Vec<PathBuf>) -> Msg {
 
 #[cfg(test)]
 mod tests {
-    use super::collect_pdfs;
+    use super::{collect_pdfs, natural_cmp};
+
+    #[test]
+    fn names_sort_by_number_value() {
+        let mut v = vec![
+            "1000-formulario-201747414.pdf",
+            "10-formulario-201747309.pdf",
+            "101-formulario-201748259.pdf",
+            "1-formulario-201747155.pdf",
+            "100-formulario-201747074.pdf",
+            "2-formulario-201747000.pdf",
+            "Anexo b.pdf",
+            "anexo A.pdf",
+            "01-x.pdf",
+        ];
+        v.sort_by(|a, b| natural_cmp(a, b));
+        assert_eq!(
+            v,
+            [
+                "1-formulario-201747155.pdf",
+                "01-x.pdf",
+                "2-formulario-201747000.pdf",
+                "10-formulario-201747309.pdf",
+                "100-formulario-201747074.pdf",
+                "101-formulario-201748259.pdf",
+                "1000-formulario-201747414.pdf",
+                "anexo A.pdf",
+                "Anexo b.pdf",
+            ]
+        );
+    }
 
     #[test]
     fn folder_scan_includes_subfolders_in_order() {

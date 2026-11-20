@@ -27,8 +27,9 @@ USE
    there.
 2. Add PDFs. They are appended in the visible order. Add folder includes
    subfolders: first the folder's own PDFs by name, then each subfolder by name.
-   Shortcuts and links are skipped. Windows may return a multiple selection sorted by name
-   rather than by click order. Check the order; use Move up/Move down on
+   Shortcuts and links are skipped.
+   Name order works like Explorer: numbers are compared by value (1, 2, 10,
+   100), also when you select several PDFs. Check the order; use Move up/Move down on
    pending documents, or add them one by one if you need another order.
    Ctrl+click selects several documents.
 3. Select the printer. Check paper, tray, colour and duplex in Windows settings
